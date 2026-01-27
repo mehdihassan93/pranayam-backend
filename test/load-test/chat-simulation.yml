@@ -1,0 +1,52 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 50
+      name: "Ramping up users"
+    - duration: 120
+      arrivalRate: 50
+      name: "Sustained load"
+  engines:
+    socketio-v3: {}
+  payload:
+    path: "users.csv"
+    fields:
+      - "userId"
+      - "token"
+
+scenarios:
+  - name: "Real-time Chat Simulation"
+    engine: socketio-v3
+    flow:
+      - connect: "http://localhost:3000?token={{ token }}"
+      - emit:
+          channel: "join_conversation"
+          data: "load_test_room_1"
+      - think: 1
+      - loop:
+          - emit:
+              channel: "send_message"
+              data:
+                conversationId: "load_test_room_1"
+                senderId: "user_{{ $randomString() }}"
+                content: "Artificial load message {{ $loopCount }}"
+                recipientId: "target_user"
+          - think: 2
+          - emit:
+              channel: "typing"
+              data:
+                conversationId: "load_test_room_1"
+                userId: "user_{{ $randomString() }}"
+                isTyping: true
+          - think: 1
+          - emit:
+              channel: "typing"
+              data:
+                conversationId: "load_test_room_1"
+                userId: "user_{{ $randomString() }}"
+                isTyping: false
+        count: 10
+      - think: 5
+      - disconnect: {}

@@ -1,0 +1,39 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/pranayam
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your_super_secret_key_12345
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - pranayam-network
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - pranayam-network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - pranayam-network
+
+networks:
+  pranayam-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
