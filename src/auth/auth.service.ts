@@ -2,8 +2,13 @@ import { Injectable, HttpException, HttpStatus, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { User } from "../common/schemas/user.schema";
+import { Swipe } from "../common/schemas/swipe.schema";
+import { Conversation } from "../common/schemas/conversation.schema";
+import { Message } from "../common/schemas/message.schema";
+import { Report } from "../common/schemas/report.schema";
+import { Block } from "../common/schemas/block.schema";
 import { JwtService } from "@nestjs/jwt";
 import { firstValueFrom } from "rxjs";
 
@@ -23,6 +28,11 @@ export class AuthService {
     private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Swipe.name) private swipeModel: Model<Swipe>,
+    @InjectModel(Conversation.name) private conversationModel: Model<Conversation>,
+    @InjectModel(Message.name) private messageModel: Model<Message>,
+    @InjectModel(Report.name) private reportModel: Model<Report>,
+    @InjectModel(Block.name) private blockModel: Model<Block>,
   ) {
     // Load MSG91 credentials from environment variables
     this.authKey = this.configService.get<string>("MSG91_AUTH_KEY") || "";
@@ -238,5 +248,51 @@ export class AuthService {
     }
 
     return this.userModel.findByIdAndUpdate(userId, update, { new: true });
+  }
+
+  /**
+   * Permanently deletes a user account and all associated data.
+   * Required for GDPR compliance and app store approval.
+   */
+  async deleteAccount(userId: string) {
+    this.logger.log(`Deleting account for user: ${userId}`);
+
+    const userObjectId = new Types.ObjectId(userId);
+
+    // Find all conversations the user is part of
+    const conversations = await this.conversationModel.find({
+      participants: userObjectId,
+    });
+    const conversationIds = conversations.map((c) => c._id);
+
+    // Delete all messages in those conversations
+    if (conversationIds.length > 0) {
+      await this.messageModel.deleteMany({
+        conversationId: { $in: conversationIds },
+      });
+    }
+
+    // Delete conversations, swipes, reports, blocks, and user in parallel
+    await Promise.all([
+      this.conversationModel.deleteMany({ participants: userObjectId }),
+      this.swipeModel.deleteMany({
+        $or: [{ swiperId: userObjectId }, { targetId: userObjectId }],
+      }),
+      this.reportModel.deleteMany({
+        $or: [
+          { reporterId: userObjectId },
+          { reportedUserId: userObjectId },
+        ],
+      }),
+      this.blockModel.deleteMany({
+        $or: [
+          { blockerId: userObjectId },
+          { blockedUserId: userObjectId },
+        ],
+      }),
+      this.userModel.findByIdAndDelete(userId),
+    ]);
+
+    return { message: "Account deleted successfully" };
   }
 }

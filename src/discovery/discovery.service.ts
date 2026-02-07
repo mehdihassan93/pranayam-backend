@@ -150,6 +150,52 @@ export class DiscoveryService {
   }
 
   /**
+   * Returns a limited set of profiles for guest users
+   * Sensitive data is redacted to encourage sign-up
+   */
+  async getGuestProfiles(limit: number = 3) {
+    this.logger.log("Fetching guest profiles");
+
+    try {
+      // Get random profiles (no filters for guests)
+      const profiles = await this.userModel
+        .aggregate([{ $sample: { size: limit } }])
+        .exec();
+
+      // Transform to guest-friendly format with redacted data
+      return profiles.map((p) => ({
+        id: p._id,
+        name: "???",
+        age: null,
+        photos: p.photos?.length ? p.photos : p.photoUrl ? [p.photoUrl] : [],
+        bio: null,
+        gender: null,
+        city: null,
+        height: null,
+        jobTitle: "???",
+        company: null,
+        education: null,
+        college: null,
+        lookingFor: null,
+        drinking: null,
+        smoking: null,
+        workout: null,
+        religion: null,
+        languages: [],
+        prompts: [],
+        interests: [],
+        isVerified: p.isVerified || false,
+        hasVideo: !!p.videoUrl,
+        distance: null,
+        isGuestProfile: true,
+      }));
+    } catch (error) {
+      this.logger.error(`Failed to fetch guest profiles: ${error.message}`);
+      return [];
+    }
+  }
+
+  /**
    * Handles the 'Like' action and checks for a mutual match
    */
   async handleSwipe(

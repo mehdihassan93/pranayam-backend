@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { ChatModule } from "./chat/chat.module";
 import { AuthModule } from "./auth/auth.module";
 import { DiscoveryModule } from "./discovery/discovery.module";
+import { SafetyModule } from "./safety/safety.module";
 
 import { ThrottlerModule } from "@nestjs/throttler";
 
@@ -30,6 +31,7 @@ import { ThrottlerModule } from "@nestjs/throttler";
     AuthModule,
     DiscoveryModule,
     ChatModule,
+    SafetyModule,
   ],
 })
 export class AppModule {}

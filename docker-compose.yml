@@ -5,31 +5,35 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/pranayam
+      - MONGO_URI=mongodb://pranayam_user:${MONGO_PASSWORD:-changeme}@mongodb:27017/pranayam?authSource=pranayam
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your_super_secret_key_12345
     depends_on:
       - mongodb
       - redis
     networks:
       - pranayam-network
+    restart: unless-stopped
 
   mongodb:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: pranayam_user
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-changeme}
+      MONGO_INITDB_DATABASE: pranayam
     volumes:
       - mongodb_data:/data/db
     networks:
       - pranayam-network
+    restart: unless-stopped
 
   redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
+    image: redis:7.2-alpine
     networks:
       - pranayam-network
+    restart: unless-stopped
 
 networks:
   pranayam-network:

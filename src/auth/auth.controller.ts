@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, Put, Req } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Put,
+  Delete,
+  Req,
+} from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RequestOtpDto, VerifyOtpDto } from "./dto/auth.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
@@ -29,5 +37,12 @@ export class AuthController {
   async updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
     const userId = req.user.sub;
     return this.authService.updateProfile(userId, updateProfileDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete("account")
+  async deleteAccount(@Req() req) {
+    const userId = req.user.sub;
+    return this.authService.deleteAccount(userId);
   }
 }
