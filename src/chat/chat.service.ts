@@ -51,7 +51,7 @@ export class ChatService {
       conversationId: new Types.ObjectId(data.conversationId),
       senderId: new Types.ObjectId(data.senderId),
       content: data.content,
-      messageType: data.messageType || "text",
+      type: data.messageType || "TEXT",
     });
 
     const savedMessage = await newMessage.save();
